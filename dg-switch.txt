@@ -1,0 +1,117 @@
+select username,count(*) from v$session group by username;
+--check status
+select INST_ID,switchover_status,open_mode,database_role from gv$database;
+--check gap
+select status,gap_status from v$archive_dest_status where rownum<5;
+
+
+set linesize 1000
+---check log
+select status,gap_status,APPLIED_THREAD#,ERROR from v$archive_dest_status where rownum<5;
+--check and switch to stand db
+select database_role,switchover_status from v$database;
+alter database commit to switchover to physical standby with session shutdown ;
+
+--check
+select database_role,switchover_status from v$database;
+
+--open read only
+shutdown immediate
+startup mount
+select switchover_status,open_mode,database_role from v$database;
+alter database open read only;
+alter database recover managed standby database using current logfile disconnect from  session;
+
+---check
+select switchover_status,open_mode,database_role from v$database;
+
+==============
+==============
+
+alter system set log_archive_dest_state_2=enable;
+===================
+===================
+
+
+--shutdown stand db
+shutdown immediate
+Startup mount
+---switch to pri
+alter database commit to switchover to primary;
+
+alter database open;
+---check status
+select switchover_status,open_mode,database_role from v$database;
+
+select switchover_status,open_mode,database_role from v$database;
+--check gap
+select status,gap_status from v$archive_dest_status where rownum<5;
+
+---switch logfile
+ALTER SYSTEM ARCHIVE LOG CURRENT ;
+
+
+==========
+主：
+/u01/app/11.2.0/grid/bin/srvctl
+备：
+/u01/app/11.2.0/grid/bin/srvctl
+
+==========
+主库：
+wlsqm.jxjg.corp.haier.com/10.138.16.113
+　
+备库：
+wlsqs.jxjg.corp.haier.com/10.138.16.118
+
+  
+--stop
+/u01/app/11.2.0/grid/bin/srvctl stop scan_listener
+/u01/app/11.2.0/grid/bin/srvctl stop scan
+
+/u01/app/11.2.0/grid/bin/srvctl modify scan -n wlsqm.jxjg.corp.haier.com
+/u01/app/11.2.0/grid/bin/srvctl modify scan_listener -u
+
+srvctl config scan
+
+srvctl status scan
+srvctl status scan_listener
+
+alter system set remote_listener='wlsqm.jxjg.corp.haier.com:1521' scope=both sid='*';
+
+/u01/app/11.2.0/grid/bin/srvctl start scan_listener
+
+
+srvctl status scan
+srvctl status scan_listener
+lsnrctl status LISTENER_SCAN1
+lsnrctl status LISTENER_SCAN2
+lsnrctl status LISTENER_SCAN3
+
+
+==================
+--stop
+/u01/app/11.2.0/grid/bin/srvctl stop scan_listener
+/u01/app/11.2.0/grid/bin/srvctl stop scan
+
+/u01/app/11.2.0/grid/bin/srvctl modify scan -n wlsqs.jxjg.corp.haier.com
+/u01/app/11.2.0/grid/bin/srvctl modify scan_listener -u
+
+srvctl config scan
+
+srvctl status scan
+srvctl status scan_listener
+
+alter system set remote_listener='wlsqs.jxjg.corp.haier.com:1521' scope=both sid='*';
+
+/u01/app/11.2.0/grid/bin/srvctl start scan_listener
+
+
+srvctl status scan
+srvctl status scan_listener
+lsnrctl status LISTENER_SCAN1
+lsnrctl status LISTENER_SCAN2
+lsnrctl status LISTENER_SCAN3
+
+
+lsnrctl service LISTENER_SCAN1
