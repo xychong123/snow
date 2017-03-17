@@ -1,0 +1,68 @@
+
+1，修改spfile：
+
+cat initapex1.ora 
+spfile='+data/DB_UNKNOWN/PARAMETERFILE/SPFILE.299.931279303'
+
+cat initapex2.ora 
+spfile='+data/DB_UNKNOWN/PARAMETERFILE/SPFILE.299.931279303'
+
+
+======================
+spfile内容：
+
+*.audit_file_dest='/u01/app/oracle/admin/hrbvsdb/adump'
+*.audit_trail='DB'
+*.cluster_database_instances=3
+*.cluster_database=true
+*.compatible='11.2.0.4.0'
+*.control_files='+DATA/control01.ctl','+DATA/control02.ctl'
+*.db_block_size=8192
+*.db_name='apex'
+*.db_recovery_file_dest_size=214748364800
+*.db_recovery_file_dest='+data'
+*.diagnostic_dest='/u01/app/oracle'
+apex1.instance_number=1
+apex2.instance_number=2
+*.open_cursors=1000
+*.pga_aggregate_target=2G
+*.processes=1500
+*.remote_listener='rrsjkptapp.jxjg.corp.haier.com:1521'
+*.remote_login_passwordfile='EXCLUSIVE'
+*.sessions=2304
+*.sga_max_size=4G# internally adjusted
+*.sga_target=4G
+apex1.thread=1
+apex2.thread=2
+apex1.undo_tablespace='UNDOTBS1'
+apex2.undo_tablespace='UNDOTBS2'
+
+2，添加数据库到grid
+
+  /u01/app/oracle/product/11.2.0/dbhome_1/bin/srvctl add database -d apex -o /u01/app/oracle/product/11.2.0/dbhome_1 -p +data/DB_UNKNOWN/PARAMETERFILE/SPFILE.299.931279303 -n apex -a "DATA"
+  /u01/app/oracle/product/11.2.0/dbhome_1/bin/srvctl add instance -d apex -i apex1 -n rrsjkptapp04
+  /u01/app/oracle/product/11.2.0/dbhome_1/bin/srvctl add instance -d apex -i apex2 -n rrsjkptapp05
+
+
+3，在节点1，添加redo，undo文件，启动 thread 2。 
+
+
+select GROUP#,BYTES/1024/1024,THREAD# from v$log;
+
+ALTER DATABASE ADD LOGFILE thread 2  '+DATA' SIZE 200m ; 
+ALTER DATABASE ADD LOGFILE thread 2  '+DATA' SIZE 200m ; 
+ALTER DATABASE ADD LOGFILE thread 2  '+DATA' SIZE 200m ; 
+ALTER DATABASE ADD LOGFILE thread 2  '+DATA' SIZE 200m ; 
+CREATE UNDO TABLESPACE UNDOTBS2 datafile '+data' size 10G;
+
+alter database enable thread 2;
+4，启动节点2数据库
+
+srvctl start instance -d apex -i apex2
+
+
+5，新建集群视图
+rdbms/admin/catclust.sql
+
+ 
+ 
