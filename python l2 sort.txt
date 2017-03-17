@@ -1,0 +1,32 @@
+def mySort(a):
+    lo=len(a)-1
+    i=0
+    while i<lo+1:
+        j=lo
+        while j>=i:
+            if(a[j-1]>a[j]):
+                a[j],a[j-1]=a[j-1],a[j]
+            j=j-1
+        i=i+1
+if __name__ == '__main__':
+    l1=[3,2]
+    mySort(l1)
+    print l1
+
+
+import unittest
+from test1 import word
+
+class MyTestCase(unittest.TestCase):
+    def test_something(self):
+        l1 = [3,2,1]
+        l2=[1,2,3]
+        word.mySort(l1)
+        print l1
+        self.assertEqual(l1, l2,'test faild')
+
+
+
+
+if __name__ == '__main__':
+    unittest.main()
